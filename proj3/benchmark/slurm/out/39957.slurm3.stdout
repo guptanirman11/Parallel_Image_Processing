@@ -1,0 +1,60 @@
+Running sequential baseline
+Running in small directory with 1
+Running in mixture directory with 1
+Running in big directory with 1
+Running in small directory with 1
+Running in mixture directory with 1
+Running in big directory with 1
+Running in small directory with 1
+Running in mixture directory with 1
+Running in big directory with 1
+{'small': 12.4914, 'mixture': 75.1241, 'big': 191.44776666666667}
+Scheduler: pipeline
+Running in small directory with 2 threads.
+Running in small directory with 4 threads.
+Running in small directory with 6 threads.
+Running in small directory with 8 threads.
+Running in small directory with 12 threads.
+Running in mixture directory with 2 threads.
+Running in mixture directory with 4 threads.
+Running in mixture directory with 6 threads.
+Running in mixture directory with 8 threads.
+Running in mixture directory with 12 threads.
+Running in big directory with 2 threads.
+Running in big directory with 4 threads.
+Running in big directory with 6 threads.
+Running in big directory with 8 threads.
+Running in big directory with 12 threads.
+Running in small directory with 2 threads.
+Running in small directory with 4 threads.
+Running in small directory with 6 threads.
+Running in small directory with 8 threads.
+Running in small directory with 12 threads.
+Running in mixture directory with 2 threads.
+Running in mixture directory with 4 threads.
+Running in mixture directory with 6 threads.
+Running in mixture directory with 8 threads.
+Running in mixture directory with 12 threads.
+Running in big directory with 2 threads.
+Running in big directory with 4 threads.
+Running in big directory with 6 threads.
+Running in big directory with 8 threads.
+Running in big directory with 12 threads.
+Running in small directory with 2 threads.
+Running in small directory with 4 threads.
+Running in small directory with 6 threads.
+Running in small directory with 8 threads.
+Running in small directory with 12 threads.
+Running in mixture directory with 2 threads.
+Running in mixture directory with 4 threads.
+Running in mixture directory with 6 threads.
+Running in mixture directory with 8 threads.
+Running in mixture directory with 12 threads.
+Running in big directory with 2 threads.
+Running in big directory with 4 threads.
+Running in big directory with 6 threads.
+Running in big directory with 8 threads.
+Running in big directory with 12 threads.
+{'small': [3.7556333333333334, 3.0618000000000003, 3.060866666666667, 3.435233333333333, 3.8042]}
+{'small': [3.7556333333333334, 3.0618000000000003, 3.060866666666667, 3.435233333333333, 3.8042], 'mixture': [25.4237, 19.28526666666667, 19.564933333333332, 19.841733333333334, 19.710066666666666]}
+{'small': [3.7556333333333334, 3.0618000000000003, 3.060866666666667, 3.435233333333333, 3.8042], 'mixture': [25.4237, 19.28526666666667, 19.564933333333332, 19.841733333333334, 19.710066666666666], 'big': [55.58256666666667, 40.22623333333333, 41.862566666666666, 44.858066666666666, 50.40463333333333]}
