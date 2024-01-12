@@ -1,5 +1,6 @@
 
 # Parallel Project \: An Image Processing System
+[Worked on the project from Sep2023 to December 2023]
 
 Go encourages explicit communication
 between threads (for example using channels), which is often easier to
