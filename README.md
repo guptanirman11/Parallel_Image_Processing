@@ -1,203 +1,422 @@
-[![Review Assignment Due Date](https://classroom.github.com/assets/deadline-readme-button-24ddc0f5d75046c5622901739e7c5dd533143b0c8e959d652212380cedb1ea36.svg)](https://classroom.github.com/a/vH1yCJz_)
-# Project \#3: Your Choice!
 
-**See gradescope for due date**
+# Parallel Project \: An Image Processing System
 
-## Assignment
+Go encourages explicit communication
+between threads (for example using channels), which is often easier to
+understand and makes data races easier to avoid than programming models
+where multiple threads share large amounts of data that they work on at
+the same time. The model encouraged by Go is sometimes referred to as
+"CSP style programming", for "Communicating Sequential Processes". If
+you want to learn more, here's a brief explanation of the CSP acronym:
+<https://levelup.gitconnected.com/communicating-sequential-processes-csp-for-go-developer-in-a-nutshell-866795eb879d>
+In this project, you will use CSP as well as more advance work
+distribution techniques.
 
-The final project gives you the opportunity to show me what you learned
-in this course and to build your own parallel system. In particular, you
-should think about implementing a parallel system in the domain you are
-most comfortable in (data science, machine learning, computer graphics,
-etc.). The system should solve a problem that can benefit from some form
-of parallelization and can be implemented in the way specified below.
-I recommend reading the entire description before deciding what to implement.
-If you are having trouble coming up with a problem for your system to
-solve then consider the following:
+## Preliminaries
 
--   [Embarrassingly Parallel
-    Topics](https://en.wikipedia.org/wiki/Embarrassingly_parallel)
--   [Parallel
-    Algorithms](https://en.wikipedia.org/wiki/Parallel_computing#Algorithmic_methods)
+Many algorithms in image
+processing benefit from parallelization (especially those that run on
+GPUs). In this project, we will create an image processing system
+that runs on a CPU, and reads in a series of images and applies certain
+effects to them using image convolution. 
 
-You are free to implement any parallel algorithm you like. However, you
-are required to at least have the following features in your parallel
-system:
+## Assignment: Image Processing System
+For this
+project, we will create an image editor that will apply image effects
+on series of images using 2D image convolution. Please make sure to read
+over the articles presented in the Preliminaries section before
+beginning the assignment. The program will read
+in from a series of JSON strings, where each string represents an image
+along with the effects that should be applied to that image. Each string
+will have the following format,
 
--   An input/output component that allows the program to read in data or
-    receive data in some way. The system will perform some
-    computation(s) on this input and produce an output result.
+``` json
+{ 
+  "inPath": string, 
+  "outPath": string, 
+  "effects": [string] 
+}
+```
 
--   A sequential implementation of the system. Make sure to provide a
-    usage statement.
+For example, processing an image of a sky may have the following JSON
+string,
 
--   Basic Parallel Implementation: An implementation that uses the BSP
-    pattern (using a condition variable to implement the barrier between
-    supersteps), **or** a pipelining pattern (using channels) **or** a
-    map-reduce implementation (again using a condition variable as barrier
-    between the map and the reduce stage). Choose whichever is most suitable
-    for solving the problem you have decided to tackle. The work in each
-    stage or superstep should be divided among threads in a simple fashion.
-    For example, if you choose an image processing problem with N images,
-    then each of your T threads might be assigned to work on approximately
-    N/T images. The easiest and most reasonable way to divide the work will
-    depend on your problem and your chosen parallelization approach.
+``` json
+{ 
+  "inPath": "sky.png", 
+  "outPath": "sky_out.png",  
+  "effects": ["S","B","E"]
+}
+```
 
--   Work-stealing refinement: A work-stealing algorithm using a **dequeue**
-    should be used such that the work can be split into smaller tasks, which
-    are placed in a work queue such that threads will steal work from other threads
-    when idle. You may either implement the dequeue as a linked-list (i.e., a chain
-    of nodes similar to project \#2), or as an array as shown in class. While the
-    unbounded dequeue seems more difficult to implement, the dynamic memory
-    management makes it unlikely that you will suffer from the ABA problem. If you
-    choose to implement the dequeue as an array, you need to ensure that a bounded
-    dequeue is sufficient for your application for any valid input to your program,
-    and you need to solve the ABA problem (for example using the trick of hiding a
-    stamp in some bits of the integer used as array index as shown in the class
-    video).
+where each key-value is described in the table below,
 
--   Provide a detailed write-up and analysis of your system. For this
-    assignment, this write-up is required to have more detail to explain
-    your parallel implementations since we are not giving you a problem
-    to solve. See the **System Write-up** section for more details.
+| Key-Value                     | Description |
+|-------------------------------|-------------|
+| ``"inPath":"sky.png"``        | The ``"inPath"`` pairing represents the file path of the image to read in. Images in  this assignment will always be PNG files. All images are relative to the ``data`` directory inside the ``proj2`` folder. |
+| ``"outPath:":"sky_out.png"``  | The ``"outPath"`` pairing represents the file path to save the image after applying the effects. All images are relative to the ``data`` directory inside the ``proj2`` folder. |
+| ``"effects":["S"\,"B"\,"E"]`` | The ``"effects"`` pairing  represents the image effects to apply to the image. You must apply these in the order they are listed. If no effects are specified (e.g.\, ``[]``) then the out image is the same as the input image. |
 
--   Provide all the dataset files you used in your analysis portion of
-    your write up. If these files are too big then you need to provide us
-    a link so we can easily download them from an external source.
-    It is likely that the work-stealing refinement is only beneficial if your
-    input data is structured in a certain way, e.g. if items in the input are of vastly
-    different sizes, or if subtasks in your algorithm have varying or unpredictable costs.
-    Make sure that this is the case for your project, so that you can showcase the pros/cons of all implementations.
+The program will read in the images, apply the effects associated with
+an image, and save the images to their specified output file paths. How
+the program processes this file is described in the **Program
+Specifications** section.
 
--   The grade also include design points. You should think about the
-    modularity of the system you are creating. Think about splitting
-    your code into appropriate packages, when necessary.
+### Image Effects
 
--   **You must provide a script or specific commands that shows/produces
-    the results of your system**. We need to be able to enter in a
-    single command in the terminal window and it will run and produce
-    the results of your system. Failing to provide a straight-forward
-    way of executing your system that produces its result will result in
-    **significant deductions** to your score. We prefer running a simple
-    command line script (e.g., shell-script or python3 script). However,
-    providing a few example cases of possible execution runs will be
-    acceptable.
+The sharpen, edge-detection, and blur image effects are required to use
+image convolution to apply their effects to the input image. Again, we
+can read about how to perform image convolution here:
 
--   We should also be able to run specific versions of the system. There
-    should be an option (e.g. via command line argument) to run the
-    sequential version, or the various parallel versions. Please make
-    sure to document this in your report or via the printing of a usage
-    statement.
+-   [Two Dimensional
+    Convolution](http://www.songho.ca/dsp/convolution/convolution2d_example.html)
 
--   You are free to use any additional standard/third-party libraries as
-    you wish. However, all the parallel work is **required** to be
-    implemented by you.
+As stated in the above article, the size of the input and output image
+are fixed (i.e., they are the same). Thus, results around the border
+pixels will not be fully accurate because we will need to pad zeros
+where inputs are not defined. We are required to use the a zero-padding
+when working with pixels that are not defined. 
 
--   There is a directory called `proj3` with a single `go.mod` file
-    inside your repositories. Place all your work for project 3 inside
-    this directory.
+Each effect is identified by a single character that is described below,
 
-### System Write-up
+| Image Effect | Description |
+| -------------|-------------|
+| ``"S"`` | Performs a sharpen effect with the following kernel (provided as a flat go array): ``[9]float6 {0,-1,0,-1,5,-1,0,-1,0}``. |
+| ``"E"`` | Performs an edge detection effect with the following kernel (provided as a flat go array): ``[9]float64{-1,-1,-1,-1,8,-1,-1,-1,-1}``. |
+| ``"B"`` | Performs a blur effect with the following kernel (provided as a flat go array): ``[9]float64{1 / 9.0, 1 / 9, 1 / 9.0, 1 / 9.0, 1 / 9.0, 1 / 9.0, 1 / 9.0, 1 / 9.0, 1 / 9.0}``. |
+| ``"G"`` | Performs a grayscale effect on the image. This is done by averaging the values of all three color numbers for a pixel, the red, green and blue, and then replacing them all by that average. So if the three colors were 25, 75 and 250, the average would be 116, and all three numbers would become 116. |
+### The `data` Directory
 
-In prior assignments, we provided you with the input files or data to
-run experiments against a your system and provide an analysis of those
-experiments. For this project, you will do the same with the exception
-that you will produce the data needed for your experiments. In all, you
-should do the following for the writeup:
 
--   Run experiments with data you generate for both the sequential and
-    parallel versions. For
-    the parallel version, make sure you are running your experiments
-    with at least producing work for `N` threads, where
-    `N = {2,4,6,8,12}`. Please run final experiments for the report on
-    the Peanut cluster.
--   Produce speedup graph(s) for those data sets. You should have one
-    speedup graph per parallel implementation you define in your system.
+The Data directory was placed inside the `proj` directory that contains the
+subdirectories: `editor` and `png`. **I HAVE NOT COMMITTED THIS DIRECTORY TO
+ REPOSITORY**. These are very large files!
 
-Please submit a report (pdf document, text file, etc.) summarizing your
-results from the experiments and the conclusions you draw from them.
-Your report should include your plot(s) as specified above and a
-self-contained report. That is, somebody should be able to read the
-report alone and understand what code you developed, what experiments
-you ran and how the data supports the conclusions you draw. The report
-**must** also include the following:
+Here is the struc
 
--   Describe your program and the problem it is trying to solve in detail.
--   A description of how you implemented your parallel solutions, and why
-    the approach you picked (BSP, map-reduce, pipelining) is the most appropriate. You probably
-    want to discuss things like load balancing, latency/throughput, etc.
--   Describe the challenges you faced while implementing the system.
-    What aspects of the system might make it difficult to parallelize?
-    In other words, what did you hope to learn by doing this assignment?
--   Did the usage of a task queue with work stealing improve performance?
-    Why or why not?
--   What are the **hotspots** (i.e., places where you can parallelize
-    the algorithm) and **bottlenecks** (i.e., places where there is
-    sequential code that cannot be parallelized) in your sequential
-    program? Were you able to parallelize the hotspots and/or remove the
-    bottlenecks in the parallel version?
--   What limited your speedup? Is it a lack of parallelism?
-    (dependencies) Communication or synchronization overhead? As you try
-    and answer these questions, we strongly prefer that you provide data
-    and measurements to support your conclusions.
--   Compare and contrast the two parallel implementations. Are there
-    differences in their speedups?
+### Working with Images in Go
 
-## Don't know What to Implement?
+Used `image` package which is provided by Go that
+makes it easy to load,read,and save PNG images. I recommend looking at
+the examples from these links:
 
-If you are unsure what to implement then by default you can reimplement
-the image processing assignment using the required new features.
+-   [Go PNG docs](https://golang.org/pkg/image/png/)
+-   A [helpful
+    tutorial](https://www.devdungeon.com/content/working-images-go) for
+    working on png images. Make sure to cite this website, if you are
+    going to use a similar structure to the code provided. The developer
+    directly accesses the `Pix` buffer. I used the
+    `At()` and `Set()` methods as specified by the Go PNG documentation.
 
-**You cannot reimplement project 2 or other assignments**.
+> **Note**:
+> The image package only allows you to read an image data and not modify
+> it in-place. I created a separate out buffer to represent
+> the modified pixels. I have done this in the `Image`
+> struct as follows:
 
-## Design, Style and Cleaning up
+``` go
+type Image struct {
+  in  *image.RGBA64  // Think about swapping these between effects 
+  out *image.RGBA64  // Think about swapping these between effects 
+  Bounds  image.Rectangle
+  ... 
+} 
+```
 
-Before you submit your final solution, you should, remove
+Remember these are
+**pointers** so you only need to swap the pointers to make the old out
+buffer the new in buffer when applying one effect after another effect.
+This process is less expensive than copying pixel data after apply each
+effect.
 
--   any `Printf` statements that you added for debugging purposes and
--   all in-line comments of the form: "YOUR CODE HERE" and "TODO ..."
--   Think about your function decomposition. No code duplication. This
-    homework assignment is relatively small so this shouldn't be a major
-    problem but could be in certain problems.
+### Program Specifications
 
-Go does not have a strict style guide. However, use your best judgment
-from prior programming experience about style. Did you use good variable
-names? Do you have any lines that are too long, etc.
+For this project, we will implement two versions of this image
+processing system. The versions will include a sequential version and
+one parallel version(pipeline).
 
-As you clean up, you should periodically save your file and run your
-code through the tests to make sure that you have not broken it in the
-process.
+The program has the following
+usage statement:
 
-## Grading
+    Usage: editor data_dir [mode] [number_of_threads]
+    data_dir = The data directories to use to load the images.
+    mode     = (bsp) run the BSP mode, (pipeline) run the pipeline mode
+    number_of_threads = Runs the parallel version of the program with the specified number of threads (i.e., goroutines).
 
-For this project, we grade as follows:
- - 50% Completeness. Your code should implement the required features without deadlocks or race conditions.
- - 20% Performance. Does your code scale, did you avoid unnecessary data copies, did you make an effort to remove obvious performance bottlenecks.
- - 20% Writeup. Is the report detailed, reasonably well written, and contains all the parts we asked for.
- - 10% Design and Style.
+The `data_dir` argument will always be either `big`, `small`, or
+`mixture` or a combination between them. The program will always read
+from the `data/effects.txt` file; however, the `data_dir` argument
+specifies which directory to use. The user can also add a `+` to perform
+the effects on multiple directories. For example, `big` will apply the
+`effects.txt` file on the images coming from the `big` directory. The
+argument `big+small` will apply the `effects.txt` file on both the `big`
+and `small` directory. The program must always prepend the `data_dir`
+identifier to the beginning of the `outPath`. For example, running the
+program as follows:
 
-## Submission
+    $: go run editor.go big pipleine 4 
 
-Before submitting, make sure you've added, committed, and pushed all
-your code to GitHub. You must submit your final work through Gradescope
-(linked from our Canvas site) in the "Project \#3" assignment page via
-two ways,
+will produce inside the `out` directory the following files:
 
-1.  **Uploading from Github directly (recommended way)**: You can link
-    your Github account to your Gradescope account and upload the
-    correct repository based on the homework assignment. When you submit
-    your homework, a pop window will appear. Click on "Github" and then
-    "Connect to Github" to connect your Github account to Gradescope.
-    Once you connect (you will only need to do this once), then you can
-    select the repsotiory you wish to upload and the branch (which
-    should always be "main" or "master") for this course.
-2.  **Uploading via a Zip file**: You can also upload a zip file of the
-    homework directory. Please make sure you upload the entire directory
-    and keep the initial structure the **same** as the starter code;
-    otherwise, you run the risk of not passing the automated tests.
+    big_IMG_2020_Out.png 
+    big_IMG_2724_Out.png 
+    big_IMG_3695_Out.png 
+    big_IMG_3696_Out.png 
+    big_IMG_3996_Out.png 
+    big_IMG_4061_Out.png 
+    big_IMG_4065_Out.png
+    big_IMG_4066_Out.png 
+    big_IMG_4067_Out.png
+    big_IMG_4069_Out.png
 
-As a reminder, for this assignment, there will be **no autograder** on
-Gradescope. We will run the program the CS Peanut cluster and manually
-enter in the grading into Gradescope. However, you **must still submit
-your final commit to Gradescope**.
+Here's an example of a combination run:
 
+    $: go run editor.go big+small pipeline 2
+
+will produce inside the `out` directory the following files:
+
+    big_IMG_2020_Out.png 
+    big_IMG_2724_Out.png 
+    big_IMG_3695_Out.png 
+    big_IMG_3696_Out.png 
+    big_IMG_3996_Out.png 
+    big_IMG_4061_Out.png 
+    big_IMG_4065_Out.png
+    big_IMG_4066_Out.png 
+    big_IMG_4067_Out.png
+    big_IMG_4069_Out.png
+    small_IMG_2020_Out.png 
+    small_IMG_2724_Out.png 
+    small_IMG_3695_Out.png 
+    small_IMG_3696_Out.png 
+    small_IMG_3996_Out.png 
+    small_IMG_4061_Out.png 
+    small_IMG_4065_Out.png
+    small_IMG_4066_Out.png 
+    small_IMG_4067_Out.png
+    small_IMG_4069_Out.png
+
+We will always provide valid command line arguments so we will only be
+given at most 3 specified identifiers for the `data_dir` argument. A
+single `+` will always be used to separate the identifiers with no
+whitespace.
+
+The `mode` and `number_of_threads` arguments will be used to run one of
+the parallel versions. 
+
+The scheduling (i.e., running) of the various implementations is handled
+by the `scheduler` package defined in `proj/scheduler` directory. The
+`editor.go` program will create a configuration object (similar to
+project 1) using the following struct:
+
+``` go
+type Config struct {
+  DataDirs string //Represents the data directories to use to load the images.
+  Mode     string // Represents which scheduler scheme to use
+  // If Mode == "s" run the sequential version
+  // If Mode == "pipeline" run the pipeline version
+  // If Mode == "bsp" run the pipeline version
+  // These are the only values for Version
+  ThreadCount int // Runs the parallel version of the program with the
+  // specified number of threads (i.e., goroutines)
+}
+```
+
+The `Schedule` function inside the `proj2/scheduler/scheduler.go` file
+will then call the correct version to run based on the `Mode` field of
+the configuration value. Each of the functions to begin running the
+various implementation will be explained in the following sections.
+**You cannot modify any of the code in the
+\`\`proj2/scheduler/scheduler.go\`\` or \`\`proj2/editor/editor.go\`\`
+file**.
+
+## Part 1: Sequential Implementation
+
+Inside the `proj2/scheduler/sequential.go` file, implement the function:
+
+``` go
+func RunSequential(config Config) {
+
+}
+```
+
+The sequential version is ran by default when executing the `editor`
+program when the `mode` and `number_of_threads` are both not provided.
+The sequential program is relatively straightforward. This version
+should run through the images specified by the strings coming in from
+`effects.txt`, apply their effects and save the modified images to their
+output files inside the `data/out` directory. Make sure to prepend the
+`data_dir` identifier.
+
+> **Note**:
+> You should implement the sequential version first. Make sure your code
+> is **modular** enough such that you can potentially reuse functions/data
+> structures later in your parallel version. Think about what libraries
+> should be created (e.g., feed and lock libraries you created for project
+> 1). **We will be looking at code and design style more closely when
+> grading this assignment**.
+
+You may find this code useful:
+
+``` go
+effectsPathFile := fmt.Sprintf("../data/effects.txt")
+effectsFile, _ := os.Open(effectsPathFile)
+reader := json.NewDecoder(effectsFile)
+```
+
+## Part 2: Pipeline + BSP Implementation
+
+The first parallel implementation will use channels and must be
+implemented as follows:
+
+1.  For this version, all synchronization between the goroutines is
+    done using channels.
+
+2.  We implemented the  **fan-in/fan-out** scheme.
+
+    -   **Image Task Generator**: As stated earlier, the program will
+        read in the images to process via `effects.txt`. Reading is done
+        by a single generator goroutine. The image task generator will
+        read in the JSON strings and do any preparation needed before
+        applying their effects. 
+
+    -   **ImageTask**: A value that holds everything needed to do
+        filtering for a specific JSON string. Again, its up to you how
+        you define the `ImageTask` struct.
+
+    -   **Workers**: The workers are the goroutines that are performing
+        the filtering effects on the images. The number of workers is
+        static and is equal to the `number_of_threads` command line
+        argument. A worker use a pipeline pattern. 
+        Each `Worker` of the pipeline, have an internal *data
+        decomposition* component, do the following:
+
+        -   Spawn `N` number of goroutines, where
+            `N = number_of_threads`. We will call these "mini-workers".
+        -   Each mini-worker goroutine is given a section of the image
+            to work on.
+        -   Each mini-worker goroutine will apply the effect for that
+            stage to its assigned section.
+        -   You should give approximately equal portions to all
+            mini-workers.
+
+        Visually the splitting could look something like this if
+        `number_of_threads=6`:
+
+        This means that if there will be a total of 6 `Workers` with
+        each having 6 mini-workers running, which totals to 36 "worker"
+        goroutines running in parallel. One question you may have is
+        "should the worker be spawning N new mini-workers for each
+        effect, or should it spawn N new mini-workers once when it gets
+        an image and reuse those same goroutines at each stage of the
+        pipeline for that image?" 
+        The output of a worker is an `ImageResult`.
+
+    -   **ImageResult**: the final image after applying its effects.
+        
+    -   **Results Aggregator**: The results aggregator gorountine reads
+        from the channel that holds the `ImageResults` and saves the
+        filtered image to its `"outPath"` file.
+
+3.  If all the images have been processed then the main goroutine can
+    exit the program. The main goroutine does not handle the
+    Image Task Generator and/or the Results Aggregator.
+
+4.  The `mode` command line argument value for executing this version is
+    `"pipeline"`.
+
+Another way of stating the above breakdown is the following:
+
+-   *X* images to process
+-   *P* number of threads (which is supplied by the `number_of_threads`
+    flag)
+-   *N* workers (*N = P*)
+
+1.  `ImageTaskGenerator` produces *X* `ImageTasks` and dumps them all
+    into a channel.
+2.  A worker *w1* tries to grab a single `ImageTask` *x1* from the
+    channel. This worker is SOLELY responsible for performing all *E*
+    effects for this one image.
+3.  The worker *w1* splits up this single `ImageTask` *x1* into *P*
+    roughly equal portions and spawns *P* goroutines to apply effect
+    *e1* to the image. Once all goroutines have applied effect *e1*,
+    they can begin applying *e2*, *e3*, ... , until all *E* effects have
+    been applied in order.
+4.  Meanwhile, other workers *w2*, *w3*, ... all the way up to *N* are
+    concurrently grabbing images of their own, and performing step (3)
+    on their own images.
+5.  If *X \> N*, then a worker *w* will go back up to step (2), grab
+    another `ImageTask` *x*, and perform step (3) on it. We repeat this
+    process until all *X* images have been processed.
+
+
+
+   
+    
+   
+
+## Part 3: Performance Measurements and Speedup Graphs
+
+I ran timing measurements on both the sequential and parallel
+versions of the `editor.go` program. The `data` directory will be used
+to measure the performance of the parallel versions versus the
+sequential version. We will keep things simple and only look at
+measuring single data directories: `small`, `mixture`, and `big`. The
+measurements gathered will be used to create speedup graphs. Each speedup graph is based around a single parallel version
+(e.g., `pipeline`) where each line represents running a specific data
+directory. The set of threads will be `{2,4,6,8,12}` and will remain the
+same for all speedup graphs. Here is the breakdown for producing the
+speedup graphs:
+
+
+1.  Each line in the graph represents a `data` directory size (i.e.,
+    `small`, `mixture`, and `big`) that you will run for each thread
+    number in the set of threads (i.e., `{2,4,6,8,12}`).
+
+    Ran each line execution 5 times in a
+    row. We have made the `editor.go` program print the executing time
+    for running the program. 
+
+
+2.  The names for each graph file will be the name of the parallel
+    versions (i.e., `speedup-bsp.png` and `speedup-pipeline.png`)
+
+3.  For each speedup graph, the y-axis will list the speedup measurement
+    and the x-axis will list the number of threads. Similar to the graph
+    shown below. Make make sure to title the graph, and label each axis.
+    Make sure to adjust your y-axis range so that we can accurately see
+    the values. That is, if most of your values fall between a range of
+    \[0,1\] then don't make your speedup range \[0,14\].
+
+4.  You must write a script that produces both graphs on the `debug`
+    Peanut cluster. Use the original `` benchmark-proj`1.sh `` file as
+    your template but name the actual slurm file for project 2,
+    `benchmark-proj2.sh` and keep the configuration settings the same
+    except for choosing the `debug` partition.
+
+5.  All  work for this section is placed in the `benchmark`
+    directory along with the generated speedup graphs. 
+
+## Part 5: Performance Analysis
+
+### Project Summary
+
+In my project report, I provided a comprehensive summary of the experiment results and the corresponding conclusions drawn from them. The report incorporated essential graphs, along with a detailed analysis to facilitate a clear understanding of the developed code, conducted experiments, and the supporting data. Here are the key components included in the report:
+
+### Project Description
+I began with a concise paragraph outlining the project, summarizing its core objectives and scope.
+
+### Testing Script Instructions
+Clear instructions were provided on how to execute the testing script. Users could seamlessly run the script with a simple command, such as `sbatch benchmark-proj.sh`.
+
+### Graph Analysis
+I delved into a thorough analysis of the graphs, addressing key questions:
+- Identified hotspots and bottlenecks in the sequential program.
+- Discussed the superior performance of a specific parallel implementation and provided insights into the reasons behind its efficiency.
+- Explored the impact of problem size (data size) on performance.
+- Speculated on potential differences in performance measurements if the Go runtime scheduler utilized a `1:1` or `N:1` scheduler.
+
+### Performance Improvement Hypotheses
+I highlighted hypothetical areas in the implementation that could see performance improvements. A rationale was provided for anticipating these enhancements.
+
+In essence, the project report aimed to encapsulate the entire project experience, from its foundational description to the practical aspects of running experiments and drawing insightful conclusions.

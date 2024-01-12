@@ -7,7 +7,7 @@ import (
 	"io"
 	"math/rand"
 	"os"
-	"proj3/png"
+	"proj/png"
 	"strings"
 )
 

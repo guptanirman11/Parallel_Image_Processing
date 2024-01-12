@@ -3,7 +3,7 @@ package main
 import (
 	"fmt"
 	"os"
-	"proj3/scheduler"
+	"proj/scheduler"
 	"strconv"
 	"time"
 )

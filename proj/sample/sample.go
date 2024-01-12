@@ -2,7 +2,7 @@ package main
 
 import (
 	"os"
-	"proj3/png"
+	"proj/png"
 )
 
 func main() {
