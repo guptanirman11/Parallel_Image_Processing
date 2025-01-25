@@ -12,16 +12,9 @@ you want to learn more, here's a brief explanation of the CSP acronym:
 <https://levelup.gitconnected.com/communicating-sequential-processes-csp-for-go-developer-in-a-nutshell-866795eb879d>
 In this project, I used CSP as well as more advance work
 distribution techniques.
+ 
 
-## Preliminaries
-
-Many algorithms in image
-processing benefit from parallelization (especially those that run on
-GPUs). In this project, we will create an image processing system
-that runs on a CPU, and reads in a series of images and applies certain
-effects to them using image convolution. 
-
-## Assignment: Image Processing System
+## Image Processing System
 For this
 project, we will create an image editor that will apply image effects
 on series of images using 2D image convolution. The program will read
